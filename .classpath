@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
+	<classpathentry kind="lib" path="/Users/calvin/workspace-mahout/mahout-distribution-0.8/core/target/mahout-core-0.8.jar" sourcepath="/Users/calvin/workspace-mahout/mahout-distribution-0.8/core/src"/>
+	<classpathentry kind="lib" path="/Users/calvin/workspace-mahout/mahout-distribution-0.8/integration/target/dependency/slf4j-jcl-1.7.5.jar"/>
+	<classpathentry kind="lib" path="/Users/calvin/workspace-mahout/mahout-distribution-0.8/core/target/mahout-core-0.8-job.jar" sourcepath="/Users/calvin/workspace-mahout/mahout-distribution-0.8/math/src/main/java/">
+		<attributes>
+			<attribute name="source_encoding" value="UTF-8"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/calvin/workspace-mahout/mahout-distribution-0.8/integration/target/dependency/hadoop-core-1.1.2.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Weka"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
