@@ -1,5 +1,6 @@
 package kr.ac.snu.bi.cogtv;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -9,9 +10,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import kr.ac.snu.bi.common.Commons;
 import kr.ac.snu.bi.mahout.MatrixUtils;
 import kr.ac.snu.bi.mahout.PREvaluator;
-import kr.ac.snu.bi.mahout.clustering.SimpleKMeansClustering;
 import kr.ac.snu.bi.weka.WekaSimpleKMeans;
 
 import org.apache.mahout.classifier.AbstractVectorClassifier;
@@ -45,6 +46,10 @@ public class MGBRecommender
   public static final int WEIGHTING_RATING = 1;
   public static final int WEIGHTING_QUANTILE = 2;
   public static final int WEIGHTING_LASSO_COEF = 3;
+  
+  public static String LABEL = "Not Assigned";
+  public static String OUTPUT_PATH;
+  public static String OUTPUT_SURFIX;
 
   private int numOfClusters;
   private Matrix train_matrix;
@@ -300,6 +305,11 @@ public class MGBRecommender
     PREvaluator ev = new PREvaluator();
     final int TOP_N = 5;
     TopNResult[] top = new TopNResult[NUM_OF_USERS];
+    
+    PrintWriter evaluation = Commons.getFileWriter(OUTPUT_PATH + "evaluation" + OUTPUT_SURFIX);
+    PrintWriter userPrecision = Commons.getFileWriter(OUTPUT_PATH + "userPrecision" + OUTPUT_SURFIX);
+    PrintWriter topNDist = Commons.getFileWriter(OUTPUT_PATH + "top" + TOP_N + "Dist" + OUTPUT_SURFIX);
+    PrintWriter topNPrecision = Commons.getFileWriter(OUTPUT_PATH + "top" + TOP_N + "Precision" + OUTPUT_SURFIX);
   
     for (int i = 0; i < this.test_matrix.numRows(); i++)
     {
@@ -347,7 +357,7 @@ public class MGBRecommender
       }
       ev.addInstance(recItemLike, prfItemLike);
     }
-    ev.printResult();
+    ev.printResult(evaluation);
     
     double precision = 0;
     double total = 0;
@@ -364,7 +374,6 @@ public class MGBRecommender
           Vector result = top[i].poll();
           if (null != result)
           {
-//            System.out.println(result);
             count++;
             if (1.0d == result.get(RATING_SCALE))
               correct++;
@@ -372,24 +381,32 @@ public class MGBRecommender
         }
         double sub_p = 1.0d * correct / count;
         sum[count - 1]++;
-        System.out.println((i + 1) + "\t" + sub_p);
         precision += sub_p;
         total++;
+        
+        userPrecision.println((i + 1) + "\t" + sub_p);
       }
     }
     
     // print TOP_N distribution
-//    for (int i = 0; i < TOP_N; i++)
-//      System.out.print(sum[i] + "\t");
-//    System.out.println();
+    for (int i = 0; i < TOP_N; i++)
+      topNDist.print(sum[i] + "\t");
+    topNDist.println();
     
-//    System.out.println("TOP " + TOP_N + " precision");
-//    System.out.println(precision / total);
+    topNPrecision.println(precision / total);
+    
+    evaluation.close();
+    userPrecision.close();
+    topNDist.close();
+    topNPrecision.close();
   }
 
   public void testFull(Map<Integer, Set<Integer>> clusterToVectorSet)
   {
     PREvaluator[][] evTable = new PREvaluator[numOfClusters][numOfClusters];
+    
+    PrintWriter accuracyMatrix = Commons.getFileWriter(OUTPUT_PATH + "accuracyMatrix" + OUTPUT_SURFIX);
+    PrintWriter numberOfUsersPerCluster = Commons.getFileWriter(OUTPUT_PATH + "numberOfUsersPerCluster" + OUTPUT_SURFIX);
   
     for (int i = 0; i < this.test_matrix.numRows(); i++)
     {
@@ -438,15 +455,18 @@ public class MGBRecommender
     {
       for (int j = 0; j < this.classifiers.length; j++)
       {
-        evTable[k][j].printResult();
+        evTable[k][j].printResult(accuracyMatrix);
       }
     }
     
-    System.out.println("# of users per cluster");
+    //# of users per cluster
     for (Entry<Integer, Set<Integer>> entry : clusterToVectorSet.entrySet())
     {
-      System.out.println(entry.getKey() + "\t" + entry.getValue().size());
+      numberOfUsersPerCluster.print(entry.getValue().size() + "\t");
     }
+    
+    accuracyMatrix.close();
+    numberOfUsersPerCluster.close();
   }
 
   public void eval(int weighting_method, boolean hasThreshold, int iter) throws Exception
@@ -482,15 +502,16 @@ public class MGBRecommender
   public static void main(String[] args) throws Exception
   {
     String[] LABEL_BINARIZATION_METHODS = { "3quartile_midpt", "adaptive", "adaptive_random" };
-    String[] USER_PROFILING_METHODS     = { "geneAvr", "linSVM", "lasso" };
+    String[] USER_PROFILING_METHODS     = { "geneAvr", "linSVM", "logit" };
+    String DATA_PATH = "data/dec10/";
+    String DATA_SURFIX = "_1210.csv";
     
-    int iter = 1;
+    int iter = 10;
 
     for (int p2 = 0; p2 < LABEL_BINARIZATION_METHODS.length; p2++)
     {
-      if (p2 != 0) continue;
-      Matrix tr = MatrixUtils.read(false, "data/nov19/fold1_training_" + LABEL_BINARIZATION_METHODS[p2] + "_1118.csv");
-      Matrix te = MatrixUtils.read(false, "data/nov19/fold1_test_" + LABEL_BINARIZATION_METHODS[p2] + "_1118.csv");
+      Matrix tr = MatrixUtils.read(false, DATA_PATH + "fold1_training_" + LABEL_BINARIZATION_METHODS[p2] + DATA_SURFIX);
+      Matrix te = MatrixUtils.read(false, DATA_PATH + "fold1_test_" + LABEL_BINARIZATION_METHODS[p2] + DATA_SURFIX);
       
       // Check the matrix
       System.out.println(tr.numRows() + " x " + tr.numCols());
@@ -499,8 +520,8 @@ public class MGBRecommender
       for (int p3 = 0; p3 < USER_PROFILING_METHODS.length; p3++)
       {
         Matrix uprofile = MatrixUtils.read(false, 
-            "data/nov19/uprofile_" + USER_PROFILING_METHODS[p3] + 
-                    "_fold1_" + LABEL_BINARIZATION_METHODS[p2] + ".csv");
+            DATA_PATH + "uprofile_" + USER_PROFILING_METHODS[p3] + 
+                    "_fold1_" + LABEL_BINARIZATION_METHODS[p2] + DATA_SURFIX);
          
         System.out.println(uprofile.numRows() + " x " + uprofile.numCols());
         
@@ -508,9 +529,13 @@ public class MGBRecommender
         
         for (int k = 3; k <= 4; k++)
         {
-            new MGBRecommender(tr, te, Math.max(1, 3 * k)).evalWithUserGeneMatrix(uprofile, false, iter);
-//            System.out.println("***");
-//            new MGBRecommender(tr, te, Math.max(1, 3 * k)).evalFullWithUserGeneMatrix(uprofile, false, iter);
+          int N = Math.max(1, 3 * k);
+          MGBRecommender.LABEL = LABEL_BINARIZATION_METHODS[p2] + "_" + USER_PROFILING_METHODS[p3] + "_" + N;
+          MGBRecommender.OUTPUT_PATH = DATA_PATH + MGBRecommender.LABEL + "_";
+          MGBRecommender.OUTPUT_SURFIX = "_report.txt";
+          new MGBRecommender(tr, te, N).evalWithUserGeneMatrix(uprofile, false, iter);
+          //System.out.println("***");
+          new MGBRecommender(tr, te, Math.max(1, 3 * k)).evalFullWithUserGeneMatrix(uprofile, false, iter);
         }
       }
     }

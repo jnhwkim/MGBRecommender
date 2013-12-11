@@ -1,6 +1,6 @@
 package kr.ac.snu.bi.mahout;
 
-import kr.ac.snu.bi.cogtv.testbed.QuantileEvaluator;
+import java.io.PrintWriter;
 
 public class PREvaluator
 {
@@ -18,7 +18,7 @@ public class PREvaluator
       this.testTable[3]++;
   }
   
-  public void printResult()
+  public void printResult(PrintWriter accuracyMatrix)
   {
     float precision = (float) (1.0f * testTable[0] / (testTable[0] + testTable[1]));
     float recall = (float) (1.0f * testTable[0] / (testTable[0] + testTable[2]));
@@ -32,6 +32,7 @@ public class PREvaluator
     result[0] = precision;
     result[1] = recall;
     result[2] = correctness;
-    QuantileEvaluator.printResult(result);
+    accuracyMatrix.println(result[0] + "\t" + result[1] + "\t" + result[2]);
   }
+  
 }
