@@ -48,6 +48,7 @@ public class MGBRecommender
   public static final int WEIGHTING_LASSO_COEF = 3;
   
   public static String LABEL = "Not Assigned";
+  public static String DATA_PATH;
   public static String OUTPUT_PATH;
   public static String OUTPUT_SURFIX;
 
@@ -56,6 +57,12 @@ public class MGBRecommender
   private Matrix test_matrix;
   private AbstractVectorClassifier[] classifiers;
   private Map<Integer, Double> thresholds;
+  
+  private final int TOP_N = 5;
+  private PrintWriter topNDist;
+  private PrintWriter topNPrecision;
+  private PrintWriter evaluation;
+  private PrintWriter numberOfUsersPerCluster;
 
   public MGBRecommender(Matrix user_rating_gene_matrix, int numOfClusters, int fold, int offset)
   {
@@ -70,6 +77,22 @@ public class MGBRecommender
     this.numOfClusters = numOfClusters;
     this.train_matrix = tr;
     this.test_matrix = te;
+  }
+  
+  public void openReportFiles()
+  {
+    topNDist = Commons.getFileWriter(DATA_PATH + "top" + TOP_N + "Dist" + OUTPUT_SURFIX, true);
+    topNPrecision = Commons.getFileWriter(DATA_PATH + "top" + TOP_N + "Precision" + OUTPUT_SURFIX, true);
+    evaluation = Commons.getFileWriter(DATA_PATH + "evaluation" + OUTPUT_SURFIX, true);
+    numberOfUsersPerCluster = Commons.getFileWriter(DATA_PATH + "numberOfUsersPerCluster" + OUTPUT_SURFIX, true);
+  }
+  
+  public void closeReportFiles()
+  {
+    topNDist.close();
+    topNPrecision.close();
+    evaluation.close();
+    numberOfUsersPerCluster.close();
   }
 
   public static Matrix[] split(Matrix data, int fold, int offset)
@@ -303,13 +326,8 @@ public class MGBRecommender
   public void test(Map<Integer, Set<Integer>> clusterToVectorSet)
   {
     PREvaluator ev = new PREvaluator();
-    final int TOP_N = 5;
     TopNResult[] top = new TopNResult[NUM_OF_USERS];
-    
-    PrintWriter evaluation = Commons.getFileWriter(OUTPUT_PATH + "evaluation" + OUTPUT_SURFIX);
     PrintWriter userPrecision = Commons.getFileWriter(OUTPUT_PATH + "userPrecision" + OUTPUT_SURFIX);
-    PrintWriter topNDist = Commons.getFileWriter(OUTPUT_PATH + "top" + TOP_N + "Dist" + OUTPUT_SURFIX);
-    PrintWriter topNPrecision = Commons.getFileWriter(OUTPUT_PATH + "top" + TOP_N + "Precision" + OUTPUT_SURFIX);
   
     for (int i = 0; i < this.test_matrix.numRows(); i++)
     {
@@ -357,6 +375,7 @@ public class MGBRecommender
       }
       ev.addInstance(recItemLike, prfItemLike);
     }
+    evaluation.print(MGBRecommender.LABEL + "\t");
     ev.printResult(evaluation);
     
     double precision = 0;
@@ -389,24 +408,19 @@ public class MGBRecommender
     }
     
     // print TOP_N distribution
+    topNDist.print(MGBRecommender.LABEL + "\t");
     for (int i = 0; i < TOP_N; i++)
       topNDist.print(sum[i] + "\t");
     topNDist.println();
     
-    topNPrecision.println(precision / total);
-    
-    evaluation.close();
+    topNPrecision.println(MGBRecommender.LABEL + "\t" + precision / total);
     userPrecision.close();
-    topNDist.close();
-    topNPrecision.close();
   }
 
   public void testFull(Map<Integer, Set<Integer>> clusterToVectorSet)
   {
     PREvaluator[][] evTable = new PREvaluator[numOfClusters][numOfClusters];
-    
     PrintWriter accuracyMatrix = Commons.getFileWriter(OUTPUT_PATH + "accuracyMatrix" + OUTPUT_SURFIX);
-    PrintWriter numberOfUsersPerCluster = Commons.getFileWriter(OUTPUT_PATH + "numberOfUsersPerCluster" + OUTPUT_SURFIX);
   
     for (int i = 0; i < this.test_matrix.numRows(); i++)
     {
@@ -460,13 +474,14 @@ public class MGBRecommender
     }
     
     //# of users per cluster
+    numberOfUsersPerCluster.print(MGBRecommender.LABEL + "\t");
     for (Entry<Integer, Set<Integer>> entry : clusterToVectorSet.entrySet())
     {
       numberOfUsersPerCluster.print(entry.getValue().size() + "\t");
     }
+    numberOfUsersPerCluster.println();
     
     accuracyMatrix.close();
-    numberOfUsersPerCluster.close();
   }
 
   public void eval(int weighting_method, boolean hasThreshold, int iter) throws Exception
@@ -487,16 +502,20 @@ public class MGBRecommender
 
   public void evalWithUserGeneMatrix(Matrix ugm, boolean hasThreshold, int iter) throws Exception
   {
+    this.openReportFiles();
     Map<Integer, Set<Integer>> clusterToUserSet = this.userClustering(ugm);
     this.train(clusterToUserSet, iter);
     this.test(clusterToUserSet);
+    this.closeReportFiles();
   }
 
   public void evalFullWithUserGeneMatrix(Matrix ugm, boolean hasThreshold, int iter) throws Exception
   {
+    this.openReportFiles();
     Map<Integer, Set<Integer>> clusterToUserSet = this.userClustering(ugm);
     this.train(clusterToUserSet, iter);
     this.testFull(clusterToUserSet);
+    this.closeReportFiles();
   }
 
   public static void main(String[] args) throws Exception
@@ -531,6 +550,7 @@ public class MGBRecommender
         {
           int N = Math.max(1, 3 * k);
           MGBRecommender.LABEL = LABEL_BINARIZATION_METHODS[p2] + "_" + USER_PROFILING_METHODS[p3] + "_" + N;
+          MGBRecommender.DATA_PATH = DATA_PATH;
           MGBRecommender.OUTPUT_PATH = DATA_PATH + MGBRecommender.LABEL + "_";
           MGBRecommender.OUTPUT_SURFIX = "_report.txt";
           new MGBRecommender(tr, te, N).evalWithUserGeneMatrix(uprofile, false, iter);
