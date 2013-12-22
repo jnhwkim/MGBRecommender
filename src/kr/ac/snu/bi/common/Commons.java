@@ -207,14 +207,15 @@ public class Commons {
   /**
    * 파일 경로 명에 해당하는 파일 쓰기 객체를 반환한다.
    * @param filename 프로그램에서 쓰기를 시도하는 파일 경로 명
+   * @param append 이어쓰기 모드 여
    * @param 쓰기 문자셋
    * @return 주어진 파일 경로 명에 쓰기를 하는 <code>PrintWriter</code> 개체
    */
-  public static PrintWriter getFileWriter( String filename, String charset ) {
+  public static PrintWriter getFileWriter( String filename, boolean append, String charset ) {
     FileOutputStream fos;
     OutputStreamWriter osw = null;
     try {
-      fos = new FileOutputStream( filename );
+      fos = new FileOutputStream( filename, append );
       osw = new OutputStreamWriter( fos, charset );
     } catch( FileNotFoundException e ) {
       System.err.println( "Can't open " + filename + ". Please check if subdirectories exist." );
@@ -228,10 +229,19 @@ public class Commons {
   /**
    * 파일 경로 명에 해당하는 파일 쓰기 객체를 반환한다.
    * @param filename 프로그램에서 쓰기를 시도하는 파일 경로 명
+   * @param append 이어쓰기 모드 여부
+   * @return 주어진 파일 경로 명에 쓰기를 하는 <code>PrintWriter</code> 개체
+   */
+  public static PrintWriter getFileWriter( String filename, boolean append ) {
+    return getFileWriter( filename, append, "UTF8" );
+  }
+  /**
+   * 파일 경로 명에 해당하는 파일 쓰기 객체를 반환한다.
+   * @param filename 프로그램에서 쓰기를 시도하는 파일 경로 명
    * @return 주어진 파일 경로 명에 쓰기를 하는 <code>PrintWriter</code> 개체
    */
   public static PrintWriter getFileWriter( String filename ) {
-    return getFileWriter( filename, "UTF8" );
+    return getFileWriter( filename, false, "UTF8" );
   }
   /**
    * 파일 경로 명에 해당하는 RAW 파일 쓰기 객체를 반환한다.
