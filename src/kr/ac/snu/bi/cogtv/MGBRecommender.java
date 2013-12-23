@@ -37,10 +37,10 @@ public class MGBRecommender
   private static final int USER_COLUMN_IDX = 0;
   // private static final int MOVIE_COLUMN_IDX = 1;
   private static final int RATING_SCALE = 2;
-  private static final int RATING_COLUMN_IDX = 876;
+  private static final int RATING_COLUMN_IDX = 102; // 876;
   // private static final int NUM_OF_RATINGS = 99754;
   private static final int NUM_OF_USERS = 943;
-  private static final int NUM_OF_GENES = 874;
+  private static final int NUM_OF_GENES = 100; // 874;
 
   public static final int WEIGHTING_UNIFORM = 0;
   public static final int WEIGHTING_RATING = 1;
@@ -220,17 +220,17 @@ public class MGBRecommender
    * @param
    * @param user_idx
    * @return
+   * @throws Exception 
    */
   public static Matrix getSubMatrixByUser(Matrix m, Set<Integer> userIndexes)
   {
     List<Vector> rows = Lists.newArrayList();
     for (int i = 0; i < m.rowSize(); i++)
     {
-      if (userIndexes
-          .contains(new Double(m.get(i, USER_COLUMN_IDX)).intValue()))
-      {
-        rows.add(m.viewRow(i));
-      }
+        if (userIndexes.contains(new Double(m.get(i, USER_COLUMN_IDX)).intValue()))
+        {
+          rows.add(m.viewRow(i));
+        }
     }
     Vector[] arrayOfRows = new Vector[rows.size()];
     int rowIdx = 0;
@@ -520,42 +520,48 @@ public class MGBRecommender
 
   public static void main(String[] args) throws Exception
   {
+    String[] VARIATION_METHODS = { "codebook_hclust100", "LDA_t100_weighted" };
     String[] LABEL_BINARIZATION_METHODS = { "3quartile_midpt", "adaptive", "adaptive_random" };
     String[] USER_PROFILING_METHODS     = { "geneAvr", "linSVM", "logit" };
-    String DATA_PATH = "data/dec10/";
-    String DATA_SURFIX = "_1210.csv";
+    String DATA_PATH = "data/dec22/";
+    String DATA_SURFIX = "_1222.csv";
     
     int iter = 10;
 
-    for (int p2 = 0; p2 < LABEL_BINARIZATION_METHODS.length; p2++)
+    for (int p2p = 0; p2p < VARIATION_METHODS.length; p2p++ )
     {
-      Matrix tr = MatrixUtils.read(false, DATA_PATH + "fold1_training_" + LABEL_BINARIZATION_METHODS[p2] + DATA_SURFIX);
-      Matrix te = MatrixUtils.read(false, DATA_PATH + "fold1_test_" + LABEL_BINARIZATION_METHODS[p2] + DATA_SURFIX);
-      
-      // Check the matrix
-      System.out.println(tr.numRows() + " x " + tr.numCols());
-      System.out.println(te.numRows() + " x " + te.numCols());
-      
-      for (int p3 = 0; p3 < USER_PROFILING_METHODS.length; p3++)
+      for (int p2 = 0; p2 < LABEL_BINARIZATION_METHODS.length; p2++)
       {
-        Matrix uprofile = MatrixUtils.read(false, 
-            DATA_PATH + "uprofile_" + USER_PROFILING_METHODS[p3] + 
-                    "_fold1_" + LABEL_BINARIZATION_METHODS[p2] + DATA_SURFIX);
-         
-        System.out.println(uprofile.numRows() + " x " + uprofile.numCols());
+        Matrix tr = MatrixUtils.read(false, DATA_PATH + "fold1_training_" + VARIATION_METHODS[p2p] + "_"
+            + LABEL_BINARIZATION_METHODS[p2] + DATA_SURFIX);
+        Matrix te = MatrixUtils.read(false, DATA_PATH + "fold1_test_" + VARIATION_METHODS[p2p] + "_"
+            + LABEL_BINARIZATION_METHODS[p2] + DATA_SURFIX);
+
+        // Check the matrix
+        System.out.println(tr.numRows() + " x " + tr.numCols());
+        System.out.println(te.numRows() + " x " + te.numCols());
         
-        System.out.println("<" + LABEL_BINARIZATION_METHODS[p2] + " | " + USER_PROFILING_METHODS[p3] + ">");
-        
-        for (int k = 3; k <= 4; k++)
+        for (int p3 = 0; p3 < USER_PROFILING_METHODS.length - 1; p3++)
         {
-          int N = Math.max(1, 3 * k);
-          MGBRecommender.LABEL = LABEL_BINARIZATION_METHODS[p2] + "_" + USER_PROFILING_METHODS[p3] + "_" + N;
-          MGBRecommender.DATA_PATH = DATA_PATH;
-          MGBRecommender.OUTPUT_PATH = DATA_PATH + MGBRecommender.LABEL + "_";
-          MGBRecommender.OUTPUT_SURFIX = "_report.txt";
-          new MGBRecommender(tr, te, N).evalWithUserGeneMatrix(uprofile, false, iter);
-          //System.out.println("***");
-          new MGBRecommender(tr, te, Math.max(1, 3 * k)).evalFullWithUserGeneMatrix(uprofile, false, iter);
+          Matrix uprofile = MatrixUtils.read(false, 
+              DATA_PATH + "uprofile_" + USER_PROFILING_METHODS[p3] + 
+                      "_fold1_" + VARIATION_METHODS[p2p] + "_" + LABEL_BINARIZATION_METHODS[p2] + DATA_SURFIX);
+           
+          System.out.println(uprofile.numRows() + " x " + uprofile.numCols());
+          
+          System.out.println("<" + VARIATION_METHODS[p2p] + "_" + LABEL_BINARIZATION_METHODS[p2] + " | " + USER_PROFILING_METHODS[p3] + ">");
+          
+          for (int k = 3; k <= 4; k++)
+          {
+            int N = Math.max(1, 3 * k);
+            MGBRecommender.LABEL = VARIATION_METHODS[p2p] + "_" + LABEL_BINARIZATION_METHODS[p2] + "_" + USER_PROFILING_METHODS[p3] + "_" + N;
+            MGBRecommender.DATA_PATH = DATA_PATH;
+            MGBRecommender.OUTPUT_PATH = DATA_PATH + MGBRecommender.LABEL + "_";
+            MGBRecommender.OUTPUT_SURFIX = ".txt";
+            new MGBRecommender(tr, te, N).evalWithUserGeneMatrix(uprofile, false, iter);
+            //System.out.println("***");
+            new MGBRecommender(tr, te, Math.max(1, 3 * k)).evalFullWithUserGeneMatrix(uprofile, false, iter);
+          }
         }
       }
     }
