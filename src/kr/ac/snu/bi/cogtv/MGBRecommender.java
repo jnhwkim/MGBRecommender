@@ -37,10 +37,10 @@ public class MGBRecommender
   private static final int USER_COLUMN_IDX = 0;
   // private static final int MOVIE_COLUMN_IDX = 1;
   private static final int RATING_SCALE = 2;
-  private static final int RATING_COLUMN_IDX = 102; // 876;
+  private static final int RATING_COLUMN_IDX = 795; // 102; // 876;
   // private static final int NUM_OF_RATINGS = 99754;
   private static final int NUM_OF_USERS = 943;
-  private static final int NUM_OF_GENES = 100; // 874;
+  private static final int NUM_OF_GENES = 793; // 100; // 874;
 
   public static final int WEIGHTING_UNIFORM = 0;
   public static final int WEIGHTING_RATING = 1;
@@ -520,10 +520,10 @@ public class MGBRecommender
 
   public static void main(String[] args) throws Exception
   {
-    String[] VARIATION_METHODS = { "codebook_hclust100", "LDA_t100_weighted" };
+    String[] VARIATION_METHODS = { "Manual_grouping_61set" }; // "codebook_hclust100", "LDA_t100_weighted" };
     String[] LABEL_BINARIZATION_METHODS = { "3quartile_midpt", "adaptive", "adaptive_random" };
     String[] USER_PROFILING_METHODS     = { "geneAvr", "linSVM", "logit" };
-    String DATA_PATH = "data/dec22/";
+    String DATA_PATH = "data/dec24/";
     String DATA_SURFIX = "_1222.csv";
     
     int iter = 10;
