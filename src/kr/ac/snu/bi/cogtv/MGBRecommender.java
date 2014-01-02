@@ -348,7 +348,7 @@ public class MGBRecommender
       Vector prob = new DenseVector(RATING_SCALE);
       ((OnlineLogisticRegression) this.classifiers[k]).classifyFull(prob, instance);
       int estimated = prob.maxValueIndex(); // +1 nov12
-      boolean recItemLike, prfItemLike;
+      boolean actualBoolValue, estimatedBoolValue;
       
       // top n result
       if (null == top[userId - 1])
@@ -365,15 +365,15 @@ public class MGBRecommender
         // thresholding
         // recItemLike = (actual >= this.thresholds.get(userId)) ? true : false;
         // prfItemLike = (estimated >= this.thresholds.get(userId)) ? true : false;
-        recItemLike = actual == 1 ? true : false;
-        prfItemLike = estimated == 1 ? true : false;
+        actualBoolValue = actual == 1 ? true : false;
+        estimatedBoolValue = estimated == 1 ? true : false;
       }
       catch (NullPointerException e)
       {
         // if there is no threshold for a given user.
         continue;
       }
-      ev.addInstance(recItemLike, prfItemLike);
+      ev.addInstance(estimatedBoolValue, actualBoolValue);
     }
     evaluation.print(MGBRecommender.LABEL + "\t");
     ev.printResult(evaluation);
@@ -445,15 +445,15 @@ public class MGBRecommender
         ((OnlineLogisticRegression) this.classifiers[j]).classifyFull(prob,
             instance);
         int estimated = prob.maxValueIndex(); // +1 nov12
-        boolean recItemLike, prfItemLike;
+        boolean actualBoolValue, estimatedBoolValue;
   
         try
         {
           // thresholding
           // recItemLike = (actual >= this.thresholds.get(userId)) ? true : false;
           // prfItemLike = (estimated >= this.thresholds.get(userId)) ? true : false;
-          recItemLike = actual == 1 ? true : false; // nov12
-          prfItemLike = estimated == 1 ? true : false; // nov12
+          actualBoolValue = actual == 1 ? true : false; // nov12
+          estimatedBoolValue = estimated == 1 ? true : false; // nov12
         }
         catch (NullPointerException e)
         {
@@ -461,7 +461,7 @@ public class MGBRecommender
           continue;
         }
         if (null == evTable[k][j]) evTable[k][j] = new PREvaluator();
-        evTable[k][j].addInstance(recItemLike, prfItemLike);
+        evTable[k][j].addInstance(estimatedBoolValue, actualBoolValue);
       }
     }
     
