@@ -34,7 +34,7 @@ public class PREvaluator
     float precision = (float) (1.0f * testTable[0] / (testTable[0] + testTable[1]));
     float recall = (float) (1.0f * testTable[0] / (testTable[0] + testTable[2]));
     int total = testTable[0] + testTable[1] + testTable[2] + testTable[3];
-    float correctness = (float) (1.0f * (testTable[0] + testTable[3]) / total);
+    float accuracy = (float) (1.0f * (testTable[0] + testTable[3]) / total);
     for (int i = 0; i < 4; i++)
     {
       // System.out.println(testTable[i]);
@@ -42,7 +42,7 @@ public class PREvaluator
     float[] result = new float[3];
     result[0] = precision;
     result[1] = recall;
-    result[2] = correctness;
+    result[2] = accuracy;
     accuracyMatrix.println(result[0] + "\t" + result[1] + "\t" + result[2]);
   }
   
