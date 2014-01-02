@@ -421,6 +421,7 @@ public class MGBRecommender
   {
     PREvaluator[][] evTable = new PREvaluator[numOfClusters][numOfClusters];
     PrintWriter accuracyMatrix = Commons.getFileWriter(OUTPUT_PATH + "accuracyMatrix" + OUTPUT_SURFIX);
+    PrintWriter actualCountsWriter = Commons.getFileWriter(OUTPUT_PATH + "actualCounts" + OUTPUT_SURFIX);
   
     for (int i = 0; i < this.test_matrix.numRows(); i++)
     {
@@ -470,6 +471,7 @@ public class MGBRecommender
       for (int j = 0; j < this.classifiers.length; j++)
       {
         evTable[k][j].printResult(accuracyMatrix);
+        evTable[k][j].printActualCount(actualCountsWriter);
       }
     }
     
@@ -482,6 +484,7 @@ public class MGBRecommender
     numberOfUsersPerCluster.println();
     
     accuracyMatrix.close();
+    actualCountsWriter.close();
   }
 
   public void eval(int weighting_method, boolean hasThreshold, int iter) throws Exception
