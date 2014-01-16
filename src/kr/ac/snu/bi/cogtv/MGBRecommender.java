@@ -541,6 +541,7 @@ public class MGBRecommender
   {
     String[] VARIATION_METHODS = { "codebook_hclust100", "LDA_t100_weighted" };
     String[] LABEL_BINARIZATION_METHODS = { "3quartile_midpt", "adaptive", "adaptive_random" };
+    String[] LABEL_BINARIZATION_METHODS_SHORT = { "3Qua", "Adap", "AdaR" };
     String[] USER_PROFILING_METHODS     = { "geneAvr", "linSVM" };
     String DATA_PATH = "data/Jan15/";
     String DATA_SURFIX = "_140115.csv";
@@ -574,7 +575,7 @@ public class MGBRecommender
           {
             int N = Math.max(1, 3 * k);
             MGBRecommender.LABEL = VARIATION_METHODS[p2p].substring(0, 1).toUpperCase() + VARIATION_METHODS[p2p].substring(1, 4)
-                + LABEL_BINARIZATION_METHODS[p2].substring(0, 1).toUpperCase() + LABEL_BINARIZATION_METHODS[p2].substring(1, 4)
+                + LABEL_BINARIZATION_METHODS_SHORT[p2]
                 + USER_PROFILING_METHODS[p3].substring(0, 1).toUpperCase() + USER_PROFILING_METHODS[p3].substring(1, 4) + N;
             MGBRecommender.DATA_PATH = DATA_PATH;
             MGBRecommender.OUTPUT_PATH = DATA_PATH + MGBRecommender.LABEL + "_";
