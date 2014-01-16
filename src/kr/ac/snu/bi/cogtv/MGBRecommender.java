@@ -35,12 +35,13 @@ public class MGBRecommender
   }
 
   private static final int USER_COLUMN_IDX = 0;
-  // private static final int MOVIE_COLUMN_IDX = 1;
+  private static final int MOVIE_COLUMN_IDX = 1;
   private static final int RATING_SCALE = 2;
-  private static final int RATING_COLUMN_IDX = 795; // 102; // 876;
+  private static final int RATING_COLUMN_IDX = 102; // 876;
   // private static final int NUM_OF_RATINGS = 99754;
   private static final int NUM_OF_USERS = 943;
-  private static final int NUM_OF_GENES = 793; // 100; // 874;
+  private static final int NUM_OF_MOVIES = 1682;
+  private static final int NUM_OF_GENES = 100; // 874;
 
   public static final int WEIGHTING_UNIFORM = 0;
   public static final int WEIGHTING_RATING = 1;
@@ -296,6 +297,8 @@ public class MGBRecommender
   public void train(Map<Integer, Set<Integer>> clusterToVectorSet, int iter)
   {
     this.classifiers = new AbstractVectorClassifier[numOfClusters];
+    // int likeCount = 0;
+    // int dislikeCount = 0;
     for (int k = 0; k < numOfClusters; k++)
     {
       // initialize classifiers
@@ -315,24 +318,32 @@ public class MGBRecommender
         for (int m = 0; m < subMatrix.numRows(); m++)
         {
           int actual = new Double(subMatrix.get(m, RATING_COLUMN_IDX)).intValue(); // -1 nov12
+          // if (actual == 1) likeCount++;
+          // else if(actual == 0) dislikeCount++;
           Vector instance = subMatrix.viewRow(m).viewPart(2, NUM_OF_GENES);
           ((OnlineLogisticRegression) this.classifiers[k]).train(actual, instance);
         }
         ((OnlineLogisticRegression) this.classifiers[k]).close();
       }
     }
+    // System.out.println(likeCount + " vs " + dislikeCount);
   }
 
   public void test(Map<Integer, Set<Integer>> clusterToVectorSet)
   {
     PREvaluator ev = new PREvaluator();
+    double threshold = 0.6d;
     TopNResult[] top = new TopNResult[NUM_OF_USERS];
     PrintWriter userPrecision = Commons.getFileWriter(OUTPUT_PATH + "userPrecision" + OUTPUT_SURFIX);
+    
+    prea.data.structure.SparseMatrix tm = new prea.data.structure.SparseMatrix(NUM_OF_USERS + 1, NUM_OF_MOVIES + 1);
+    prea.data.structure.SparseMatrix p = new prea.data.structure.SparseMatrix(NUM_OF_USERS + 1, NUM_OF_MOVIES + 1);
   
     for (int i = 0; i < this.test_matrix.numRows(); i++)
     {
       // userId starts from 1.
       int userId = new Double(this.test_matrix.get(i, USER_COLUMN_IDX)).intValue();
+      int movieId = new Double(this.test_matrix.get(i, MOVIE_COLUMN_IDX)).intValue();
       int actual = new Double(this.test_matrix.get(i, RATING_COLUMN_IDX)).intValue();
       Vector instance = this.test_matrix.viewRow(i).viewPart(2, NUM_OF_GENES);
       int k = -1;
@@ -367,6 +378,8 @@ public class MGBRecommender
         // prfItemLike = (estimated >= this.thresholds.get(userId)) ? true : false;
         actualBoolValue = actual == 1 ? true : false;
         estimatedBoolValue = estimated == 1 ? true : false;
+        tm.setValue(userId, movieId, actual + 4 - threshold);
+        p.setValue(userId, movieId, prob.get(1) + 4 - threshold);
       }
       catch (NullPointerException e)
       {
@@ -377,6 +390,9 @@ public class MGBRecommender
     }
     evaluation.print(MGBRecommender.LABEL + "\t");
     ev.printResult(evaluation);
+    
+    prea.util.EvaluationMetrics evalMetrics = new prea.util.EvaluationMetrics(tm, p, 5 - threshold, 4 - threshold);
+    System.out.println(MGBRecommender.LABEL + "\t" + evalMetrics.printOneLine());
     
     double precision = 0;
     double total = 0;
@@ -523,13 +539,14 @@ public class MGBRecommender
 
   public static void main(String[] args) throws Exception
   {
-    String[] VARIATION_METHODS = { "Manual_grouping_61set" }; // "codebook_hclust100", "LDA_t100_weighted" };
+    String[] VARIATION_METHODS = { "codebook_hclust100", "LDA_t100_weighted" };
     String[] LABEL_BINARIZATION_METHODS = { "3quartile_midpt", "adaptive", "adaptive_random" };
-    String[] USER_PROFILING_METHODS     = { "geneAvr", "linSVM", "logit" };
-    String DATA_PATH = "data/dec24/";
-    String DATA_SURFIX = "_1222.csv";
+    String[] USER_PROFILING_METHODS     = { "geneAvr", "linSVM" };
+    String DATA_PATH = "data/Jan15/";
+    String DATA_SURFIX = "_140115.csv";
     
     int iter = 10;
+    System.out.println(prea.util.EvaluationMetrics.printTitleWithLongName());
 
     for (int p2p = 0; p2p < VARIATION_METHODS.length; p2p++ )
     {
@@ -541,23 +558,24 @@ public class MGBRecommender
             + LABEL_BINARIZATION_METHODS[p2] + DATA_SURFIX);
 
         // Check the matrix
-        System.out.println(tr.numRows() + " x " + tr.numCols());
-        System.out.println(te.numRows() + " x " + te.numCols());
+        // System.out.println(tr.numRows() + " x " + tr.numCols());
+        // System.out.println(te.numRows() + " x " + te.numCols());
         
-        for (int p3 = 0; p3 < USER_PROFILING_METHODS.length - 1; p3++)
+        for (int p3 = 0; p3 < USER_PROFILING_METHODS.length; p3++)
         {
           Matrix uprofile = MatrixUtils.read(false, 
               DATA_PATH + "uprofile_" + USER_PROFILING_METHODS[p3] + 
                       "_fold1_" + VARIATION_METHODS[p2p] + "_" + LABEL_BINARIZATION_METHODS[p2] + DATA_SURFIX);
            
-          System.out.println(uprofile.numRows() + " x " + uprofile.numCols());
-          
-          System.out.println("<" + VARIATION_METHODS[p2p] + "_" + LABEL_BINARIZATION_METHODS[p2] + " | " + USER_PROFILING_METHODS[p3] + ">");
+          // System.out.println(uprofile.numRows() + " x " + uprofile.numCols());
+          // System.out.println("<" + VARIATION_METHODS[p2p] + "_" + LABEL_BINARIZATION_METHODS[p2] + " | " + USER_PROFILING_METHODS[p3] + ">");
           
           for (int k = 3; k <= 4; k++)
           {
             int N = Math.max(1, 3 * k);
-            MGBRecommender.LABEL = VARIATION_METHODS[p2p] + "_" + LABEL_BINARIZATION_METHODS[p2] + "_" + USER_PROFILING_METHODS[p3] + "_" + N;
+            MGBRecommender.LABEL = VARIATION_METHODS[p2p].substring(0, 1).toUpperCase() + VARIATION_METHODS[p2p].substring(1, 4)
+                + LABEL_BINARIZATION_METHODS[p2].substring(0, 1).toUpperCase() + LABEL_BINARIZATION_METHODS[p2].substring(1, 4)
+                + USER_PROFILING_METHODS[p3].substring(0, 1).toUpperCase() + USER_PROFILING_METHODS[p3].substring(1, 4) + N;
             MGBRecommender.DATA_PATH = DATA_PATH;
             MGBRecommender.OUTPUT_PATH = DATA_PATH + MGBRecommender.LABEL + "_";
             MGBRecommender.OUTPUT_SURFIX = ".txt";
