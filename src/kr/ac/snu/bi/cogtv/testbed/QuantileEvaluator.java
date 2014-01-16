@@ -35,7 +35,7 @@ public class QuantileEvaluator
       public Recommender buildRecommender(DataModel model)
           throws TasteException
       {
-        switch (3)
+        switch (2)
         {
           case 1:
             UserSimilarity similarity = new PearsonCorrelationSimilarity(model);
@@ -64,8 +64,10 @@ public class QuantileEvaluator
     for (int i = 1; i <= NUM_OF_SETS; i++)
     {
       System.out.println("\nu" + i);
-      DataModel trainingModel = new FileDataModel(new File("ml-100k/u" + i + "base"));
-      DataModel testModel = new FileDataModel(new File("ml-100k/u" + i + "test"));
+      //DataModel trainingModel = new FileDataModel(new File("data/ml-100k/u" + i + "base"));
+      //DataModel testModel = new FileDataModel(new File("data/ml-100k/u" + i + "test"));
+      DataModel trainingModel = new FileDataModel(new File("data/jan10-ref/reference_base.txt"));
+      DataModel testModel = new FileDataModel(new File("data/jan10-ref/reference_test.txt"));
       Recommender recommender = builder.buildRecommender(trainingModel);
       float prc[] = new float[3];
       evaluate(recommender, testModel, 0.25, prc);
@@ -73,7 +75,7 @@ public class QuantileEvaluator
         prcSum[j] += prc[j] / NUM_OF_SETS;
       }
     }
-    System.out.println("\nAverage Result:\n");
+    System.out.println("\nAverage Result:");
     QuantileEvaluator.printResult(prcSum);
   }
   
@@ -145,7 +147,7 @@ public class QuantileEvaluator
     float precision = (float) (1.0f * testTable[0] / (testTable[0] + testTable[1]));
     float recall = (float) (1.0f * testTable[0] / (testTable[0] + testTable[2]));
     int total = testTable[0] + testTable[1] + testTable[2] + testTable[3];
-    float correctness = (float) (1.0f * (testTable[0] + testTable[3]) / total);
+    float accuracy = (float) (1.0f * (testTable[0] + testTable[3]) / total);
     for (int i = 0; i < 4; i++)
     {
       //System.out.println(testTable[i]);
@@ -153,7 +155,7 @@ public class QuantileEvaluator
     System.out.println(sum + " - " + total + " = " + failed + "(?)");
     result[0] = precision;
     result[1] = recall;
-    result[2] = correctness;
+    result[2] = accuracy;
     QuantileEvaluator.printResult(result);
   }
   public static void printResult(float[] prc) {
